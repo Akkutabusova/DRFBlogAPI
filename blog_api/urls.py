@@ -1,5 +1,9 @@
+from django.conf.urls import url
+
+from . import views
 from .views import DeletePost, PostCategoriesList, PostListCategoryfilter, CategoryFavoritesfilter, Bookmarkfilter, \
-    CreateBookmark, DeleteBookmark, CreateFavorite, DeleteFavorite
+    CreateBookmark, DeleteBookmark, CreateFavorite, DeleteFavorite, PostArrayDetail, CreatePostArray, EditPostArray, \
+    DeletePostArray
 from .views import PostList, PostDetail, PostListDetailfilter, CreatePost, AdminPostDetail, EditPost, CommentList, \
     CommentDetail, CreateComment, DeleteComment, PostCategoryDetail
 # from rest_framework.routers import DefaultRouter
@@ -10,12 +14,13 @@ app_name = 'blog_api'
 # router = DefaultRouter()
 # router.register('', PostList, basename='post')
 # urlpatterns = router.urls
+# request http://127.0.0.1:8000/dept_emp/emp_list will invoke the emp_list function defined in views.py.
 
 urlpatterns = [
-
     path('posts/<int:pk>', PostDetail.as_view(), name='detailcreate'),
+    re_path('array/(?P<post>.+)/',  PostArrayDetail.as_view()),
+    path('posts/', PostList.as_view(), name='listcreate'),
     path('search/', PostListDetailfilter.as_view(), name='postsearch'),
-    path('', PostList.as_view(), name='listcreate'),
     # Bookmark
     path('bookmarks/', Bookmarkfilter.as_view(), name='listposts'),
     path('bookmarks/create', CreateBookmark.as_view(), name='createbookmark'),
@@ -36,7 +41,11 @@ urlpatterns = [
     path('comments/delete/<int:pk>/', DeleteComment.as_view()),
     # Post Admin Urls
     path('admin/create/', CreatePost.as_view(), name='createpost'),
+    path('admin/array/create/', CreatePostArray.as_view(), name='createarray'),
     path('admin/edit/postdetail/<int:pk>', AdminPostDetail.as_view(), name='admindetailpost'),
     path('admin/edit/<int:pk>/', EditPost.as_view(), name='editpost'),
+    path('admin/array/edit/<int:pk>/', EditPostArray.as_view(), name='editarray'),
     path('admin/delete/<int:pk>/', DeletePost().as_view(), name='deletepost'),
+    path('admin/array/delete/<int:pk>/', DeletePostArray().as_view(), name='deletearray'),
 ]
+

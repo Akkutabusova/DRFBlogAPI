@@ -1,8 +1,9 @@
-from rest_framework import generics, viewsets, filters, status
-from rest_framework.views import APIView
-from blog.models import Post, Category, Comment, Favorites, Bookmark
+from rest_framework import generics, filters
+from rest_framework.pagination import LimitOffsetPagination
+
+from blog.models import Post, Category, Comment, Favorites, Bookmark, PostArray
 from .serializers import PostSerializer, PostCategorySerializer, CommentSerializer, FavoritesSerializer, \
-    BookmarkSerializer, CategorySerializer
+    BookmarkSerializer, CategorySerializer, PostArraySerializer
 from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly, \
     BasePermission, IsAdminUser
 from django.shortcuts import get_object_or_404
@@ -34,6 +35,17 @@ class PostList(generics.ListAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Post.postobjects.all()
     serializer_class = PostSerializer
+    pagination_class = LimitOffsetPagination
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        print(request.data)
+        page = int(request.data.get("page", 0))
+        count = int(request.data.get("count", 10))
+        if page>0:
+            response.data = response.data[(page-1)*count:page*count]
+        else:
+            response.data = response.data[page:count]
+        return super().finalize_response(request, response, *args, **kwargs)
 
 
 class PostDetail(generics.RetrieveAPIView):
@@ -47,11 +59,22 @@ class PostDetail(generics.RetrieveAPIView):
         return obj
 
 
+class PostArrayDetail(generics.ListAPIView):
+    serializer_class = PostArraySerializer
+
+    def get_queryset(self):
+        post = self.kwargs['post']
+        arrays = PostArray.objects.filter(post=post)
+        return arrays
+
+
+
 class PostListDetailfilter(generics.ListAPIView):
     queryset = Post.postobjects.all()
     serializer_class = PostSerializer
+    pagination_class = LimitOffsetPagination
     filter_backends = [filters.SearchFilter]
-    search_fields = ['^slug', '=category']
+    search_fields = ['^slug']
 
     # '^' Starts-with search.
     # '=' Exact matches.
@@ -61,6 +84,7 @@ class PostListDetailfilter(generics.ListAPIView):
 
 class PostListCategoryfilter(generics.ListAPIView):
     serializer_class = PostSerializer
+    pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
         """
@@ -84,12 +108,14 @@ class PostCategoryDetail(generics.RetrieveAPIView):
 class CategoryFavoritesfilter(generics.ListAPIView):
     queryset = Favorites.objects.all()
     serializer_class = FavoritesSerializer
+    pagination_class = LimitOffsetPagination
     filter_backends = [filters.SearchFilter]
     search_fields = ['=author']
 
 
 class Bookmarkfilter(generics.ListAPIView):
     serializer_class = BookmarkSerializer
+    pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
         """
@@ -102,31 +128,23 @@ class Bookmarkfilter(generics.ListAPIView):
 
 class PostSearch(generics.ListAPIView):
     permission_classes = [AllowAny]
+    pagination_class = LimitOffsetPagination
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['^title']
 
 
-# class CreatePost(generics.CreateAPIView):
-#     permission_classes = [IsAdminUser]
-#     queryset = Post.objects.all()
-#     serializer_class = PostSerializer
-
 class CreatePost(generics.CreateAPIView):
     permission_classes = [IsAdminUser]
-    # parser_classes = [MultiPartParser, FormParser]
     queryset = Post.objects.all()
     serializer_class = PostSerializer
 
-    # def post(self, request, format=None):
-    #     print(request.data)
-    #     serializer = PostSerializer(data=request.data)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response(serializer.data, status=status.HTTP_200_OK)
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CreatePostArray(generics.CreateAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = PostArray.objects.all()
+    serializer_class = PostArraySerializer
 
 
 class AdminPostDetail(generics.RetrieveAPIView):
@@ -137,23 +155,38 @@ class AdminPostDetail(generics.RetrieveAPIView):
 
 class EditPost(generics.UpdateAPIView):
     permission_classes = [PostUserWritePermission]
-    serializer_class = PostSerializer
     queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
+
+class EditPostArray(generics.UpdateAPIView):
+    permission_classes = [IsAdminUser]
+    serializer_class = PostArraySerializer
+    queryset = PostArray.objects.all()
+
 
 
 class DeletePost(generics.RetrieveDestroyAPIView):
     permission_classes = [PostUserWritePermission]
-    serializer_class = PostSerializer
     queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
+
+class DeletePostArray(generics.RetrieveDestroyAPIView):
+    permission_classes = [IsAdminUser]
+    queryset = PostArray.objects.all()
+    serializer_class = PostArraySerializer
 
 
 class PostCategoriesList(generics.ListAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
-    serializer_class = PostCategorySerializer
+    pagination_class = LimitOffsetPagination
     queryset = Category.objects.all()
+    serializer_class = PostCategorySerializer
 
 
 class CommentList(generics.ListAPIView):
+    pagination_class = LimitOffsetPagination
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 

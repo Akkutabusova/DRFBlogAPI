@@ -3,12 +3,6 @@ from blog.models import Post, Category, Comment, Bookmark, Favorites, PostArray
 from django.conf import settings
 
 
-class PostArraySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostArray
-        fields = ('post', 'index', 'image', 'text')
-
-
 class UserRegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     username = serializers.CharField(required=True)
@@ -26,11 +20,26 @@ class PostCategorySerializer(serializers.ModelSerializer):
         fields = ('id', 'name')
 
 
+class PostArraySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostArray
+        fields = ('id', 'post', 'index', 'image', 'text')
+
+
 class PostSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Post
-        fields = ('category', 'id', 'title', 'image', 'slug', 'author',
+        fields = ('category', 'id', 'title', 'image', 'slug', 'date', 'author',
                   'excerpt', 'content', 'status', 'blog_views')
+
+    # def create(self, validated_data):
+    #     content_data = validated_data.pop('content')
+    #     # validated_data['content'] = len(content_data)
+    #     post = Post.objects.create(**validated_data)
+    #     for cd in content_data:
+    #         PostArray.objects.create(post=post, **cd)
+    #     return post
 
     # def create(self, vlaidated_data):
     #     seats = validated_data.pop('seats')
@@ -42,6 +51,7 @@ class PostSerializer(serializers.ModelSerializer):
     #             movieticket=instance, **seats)
     #
     #     return instance
+
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.ReadOnlyField(source='author.username')
@@ -67,5 +77,3 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ('id', 'name', 'image')
-
-
